@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advisor Sign Up - Vita Occupancy System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
+    <style>
+        /* --- VITA Occupancy System - Unified Styles --- */
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background: linear-gradient(180deg, #fdf2ec, #fbe9e7, #fdf2ec); 
+            min-height: 100vh; 
+            color: #333; /* Ensuring dark text for readability */
+            transition: background 0.5s ease-in-out; 
+        }
+        
+        /* Global Animations */
+        .fade-in { animation: fadeIn 1s ease forwards; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .btn-animate { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .btn-animate:hover { 
+            transform: translateY(-3px); 
+            box-shadow: 0 8px 18px rgba(0, 0, 0, 0.2); 
+        }
+
+        /* Card/Form Styles (Glassmorphism) */
+        .glass-card { 
+            background: rgba(255, 255, 255, 0.75); 
+            backdrop-filter: blur(20px); 
+            border: 1px solid rgba(255, 255, 255, 0.5); /* Slightly stronger border */
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12); /* Smoother, larger shadow */
+        }
+        .form-input {
+            background: rgba(255, 255, 255, 0.6); /* Slightly more opaque input field */
+            border: 1px solid rgba(255, 255, 255, 0.9);
+            color: #333;
+        }
+        .form-input::placeholder { color: #888; }
+        
+        /* Table Styles */
+        .table-sticky thead th, thead.sticky th { 
+            position: sticky; 
+            top: 0; 
+            background: rgba(255, 255, 255, 0.95); /* Nearly opaque white for sticky header */
+            z-index: 10;
+            box-shadow: 0 2px 4px -1px rgba(0,0,0,0.05); /* Subtle shadow for separation */
+        }
+
+        /* Pie Chart Styles (Specific to advisor_subject_detail.html) */
+        .pie-container {
+            width: 200px;
+            height: 200px;
+            position: relative;
+            border-radius: 50%;
+            transition: all 0.5s ease-in-out;
+        }
+        .pie-container:after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 85%;
+            height: 85%;
+            background: #fdf2ec; /* Match body background for clean cutout */
+            border-radius: 50%;
+            box-shadow: inset 0 0 12px rgba(0,0,0,0.1);
+        }
+        .pie-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10;
+            text-align: center;
+        }
+
+        /* Flash Message Transition (Specific to class_selection.html) */
+        .flash-message { transition: opacity 0.5s ease-out; }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen text-gray-800 fade-in p-4">
+    <div class="glass-card rounded-2xl p-10 md:p-14 max-w-lg w-full border-t-8 border-[#B94E60]">
+        <h1 class="text-3xl md:text-4xl font-extrabold text-[#8A1C33] mb-6 tracking-wider text-center">
+            ADVISOR SIGN UP
+        </h1>
+        
+        <form action="{{ url_for('advisor_signup') }}" method="POST" class="space-y-6">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Username</label>
+                <input type="text" id="username" name="username" class="w-full px-4 py-3 form-input rounded-lg text-gray-900" placeholder="" required>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                <input type="password" id="password" name="password" class="w-full px-4 py-3 form-input rounded-lg text-gray-900" required>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Class to Advise</label>
+                <p class="text-xs text-gray-500 mb-3">Enter the details of the student group you are advising. A teacher must have already created subjects for this group.</p>
+                <div class="grid grid-cols-3 gap-4">
+                    <div>
+                        <label for="branch" class="block text-sm font-medium text-gray-600">Branch</label>
+                        <input type="text" name="branch" class="w-full mt-1 px-3 py-2 form-input rounded-lg" placeholder="e.g., RAE" required>
+                    </div>
+                    <div>
+                        <label for="section" class="block text-sm font-medium text-gray-600">Section</label>
+                        <input type="text" name="section" class="w-full mt-1 px-3 py-2 form-input rounded-lg" placeholder="e.g., O" required>
+                    </div>
+                    <div>
+                        <label for="sem" class="block text-sm font-medium text-gray-600">Semester</label>
+                        <input type="number" name="sem" class="w-full mt-1 px-3 py-2 form-input rounded-lg" placeholder="e.g., 3" required>
+                    </div>
+                </div>
+            </div>
+            <button type="submit" class="w-full mt-8 py-3 bg-[#B94E60] hover:bg-[#8A1C33] text-white font-extrabold rounded-lg shadow-lg btn-animate">
+                Create Advisor Account
+            </button>
+            
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <p class="text-red-600 text-center mt-4 text-sm font-medium">{{ message }}</p>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        </form>
+        
+        <p class="text-center text-gray-600 text-sm mt-6">
+            <a href="{{ url_for('login_page') }}" class="font-medium text-gray-600 hover:text-[#8A1C33]">← Back to Login</a>
+        </p>
+    </div>
+</body>
+</html>

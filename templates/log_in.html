@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login | Vita Occupancy System</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(180deg, #fdf2ec, #fbe9e7, #fdf2ec);
+      transition: all 0.8s ease-in-out;
+      overflow: hidden;
+    }
+
+    .fade-in {
+      animation: fadeIn 1s ease forwards;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .glass-card {
+      background: rgba(255, 255, 255, 0.7);
+      backdrop-filter: blur(25px);
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    }
+
+    .btn-animate {
+      transition: all 0.3s ease;
+    }
+    .btn-animate:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 15px rgba(0, 0, 0, 0.15);
+    }
+  </style>
+</head>
+
+<body class="flex flex-col items-center justify-center min-h-screen text-gray-800 fade-in">
+  <div class="glass-card rounded-2xl p-10 md:p-14 max-w-md text-center border-t-8 border-[#A82D49]">
+    <h1 class="text-3xl md:text-4xl font-extrabold text-[#8A1C33] mb-4 tracking-wider">
+      SELECT YOUR ROLE
+    </h1>
+    <p class="text-sm text-gray-600 mb-8">Attendance Dashboard</p>
+
+    <div class="space-y-4">
+      <!-- Updated button colors for better shade harmony -->
+      <a href="{{ url_for('teacher_login') }}"
+        class="block w-full py-3 bg-[#A82D49] hover:bg-[#8A1C33] text-white font-bold rounded-lg shadow-md btn-animate">
+        Subject Teacher
+      </a>
+      <a href="{{ url_for('student_login') }}"
+        class="block w-full py-3 bg-[#D85A72] hover:bg-[#A82D49] text-white font-bold rounded-lg shadow-md btn-animate">
+        Student
+      </a>
+      <a href="{{ url_for('advisor_login') }}"
+        class="block w-full py-3 bg-[#B94E60] hover:bg-[#8A1C33] text-white font-bold rounded-lg shadow-md btn-animate">
+        Class Advisor
+      </a>
+    </div>
+
+    <hr class="border-gray-300 my-8">
+
+    <p class="text-center text-gray-600 text-sm">
+      New user?
+      <a href="{{ url_for('teacher_signup') }}" class="font-medium text-[#A82D49] hover:text-[#8A1C33]">Sign Up (Teacher)</a>
+      |
+      <a href="{{ url_for('advisor_signup') }}" class="font-medium text-[#B94E60] hover:text-[#8A1C33]">Sign Up (Advisor)</a>
+    </p>
+  </div>
+</body>
+</html>

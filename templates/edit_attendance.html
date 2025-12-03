@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Attendance - {{ selected_class.subject_title }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
+    <style>
+        /* --- VITA Occupancy System - Unified Styles --- */
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background: linear-gradient(180deg, #fdf2ec, #fbe9e7, #fdf2ec); 
+            min-height: 100vh; 
+            color: #333; 
+            transition: background 0.5s ease-in-out; 
+        }
+        
+        /* Global Animations */
+        .fade-in { animation: fadeIn 1s ease forwards; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .btn-animate { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .btn-animate:hover { 
+            transform: translateY(-3px); 
+            box-shadow: 0 8px 18px rgba(0, 0, 0, 0.2); 
+        }
+
+        /* Card/Form Styles (Glassmorphism) */
+        .glass-card { 
+            background: rgba(255, 255, 255, 0.75); 
+            backdrop-filter: blur(20px); 
+            border: 1px solid rgba(255, 255, 255, 0.5); 
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12); 
+        }
+        .form-input {
+            background: rgba(255, 255, 255, 0.6); 
+            border: 1px solid rgba(255, 255, 255, 0.9);
+            color: #333;
+        }
+        .form-input::placeholder { color: #888; }
+        
+        /* Table Styles */
+        .table-sticky thead th, thead.sticky th { 
+            position: sticky; 
+            top: 0; 
+            background: rgba(255, 255, 255, 0.95); 
+            z-index: 10;
+            box-shadow: 0 2px 4px -1px rgba(0,0,0,0.05); 
+        }
+
+        /* Pie Chart Styles (Specific to advisor_subject_detail.html) */
+        .pie-container {
+            width: 200px;
+            height: 200px;
+            position: relative;
+            border-radius: 50%;
+            transition: all 0.5s ease-in-out;
+        }
+        .pie-container:after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 85%;
+            height: 85%;
+            background: #fdf2ec; 
+            border-radius: 50%;
+            box-shadow: inset 0 0 12px rgba(0,0,0,0.1);
+        }
+        .pie-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10;
+            text-align: center;
+        }
+
+        /* Flash Message Transition (Specific to class_selection.html) */
+        .flash-message { transition: opacity 0.5s ease-out; }
+    </style>
+</head>
+<body class="p-4 md:p-10 text-gray-800">
+    <div class="app-container max-w-4xl mx-auto">
+        
+        <header class="flex justify-between items-center mb-6">
+            <div>
+                <h1 class="text-4xl font-extrabold text-[#8A1C33]">Edit Past Attendance</h1>
+                <p class="text-xl text-gray-700">{{ selected_class.subject_title }}</p>
+                <p class="text-gray-600">{{ selected_class.branch }} - {{ selected_class.section }} (Sem {{ selected_class.sem }})</p>
+            </div>
+            <a href="{{ url_for('home', class_id=selected_class.id) }}" class="btn-animate bg-gray-600 text-white text-sm font-semibold px-5 py-2 rounded-full shadow-lg hover:bg-gray-700">
+                ← Back to Dashboard
+            </a>
+        </header>
+
+        <div class="glass-card p-6 rounded-2xl shadow-xl mb-6 border-t-4 border-[#A82D49]">
+            <h2 class="text-2xl font-bold text-[#8A1C33] mb-4">Find Session</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label for="report-date" class="block text-sm font-medium text-gray-600 mb-2">Date</label>
+                    <input type="date" id="report-date" class="w-full px-4 py-3 form-input rounded-lg">
+                </div>
+                <div>
+                    <label for="report-period" class="block text-sm font-medium text-gray-600 mb-2">Period</label>
+                    <input type="text" id="report-period" placeholder="e.g., 1" class="w-full px-4 py-3 form-input rounded-lg">
+                </div>
+                <div class="md:self-end">
+                    <button id="fetch-records-btn" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-extrabold rounded-lg shadow-lg btn-animate">
+                        Fetch Records
+                    </button>
+                </div>
+            </div>
+            <p id="fetch-error" class="text-red-600 text-sm font-medium mt-3"></p>
+        </div>
+
+        <div class="glass-card p-6 rounded-2xl shadow-xl">
+            <h2 class="text-2xl font-bold text-[#8A1C33] mb-4">Student Records</h2>
+            <div class="overflow-x-auto max-h-[600px] overflow-y-auto table-sticky">
+                <table class="w-full text-left">
+                    <thead>
+                        <tr class="text-gray-600 border-b border-white/50">
+                            <th class="p-4">RegNo</th>
+                            <th class="p-4">Name</th>
+                            <th class="p-4">Status</th>
+                            <th class="p-4">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="records-table-body" class="divide-y divide-white/30">
+                        <tr>
+                            <td colspan="4" class="p-4 text-center text-gray-500">Please select a date and period to show records.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const classId = {{ selected_class.id }};
+            const dateInput = document.getElementById('report-date');
+            const periodInput = document.getElementById('report-period');
+            const fetchBtn = document.getElementById('fetch-records-btn');
+            const tableBody = document.getElementById('records-table-body');
+            const fetchError = document.getElementById('fetch-error');
+
+            fetchBtn.addEventListener('click', fetchRecords);
+
+            async function fetchRecords() {
+                const date = dateInput.value;
+                const period = periodInput.value.trim();
+
+                if (!date || !period) {
+                    fetchError.textContent = 'Please select a date and enter a period.';
+                    return;
+                }
+                fetchError.textContent = '';
+                tableBody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-gray-500">Loading...</td></tr>';
+
+                try {
+                    const response = await fetch('/get_records_for_date', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({
+                            class_id: classId,
+                            date: date,
+                            period: period
+                        })
+                    });
+                    
+                    if (!response.ok) {
+                        const err = await response.json();
+                        throw new Error(err.message || 'Server error');
+                    }
+
+                    const records = await response.json();
+                    renderRecords(records);
+
+                } catch (error) {
+                    console.error('Fetch error:', error);
+                    fetchError.textContent = 'Error: ' + error.message;
+                    tableBody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-red-500">Failed to load records.</td></tr>';
+                }
+            }
+
+            function renderRecords(records) {
+                if (records.length === 0) {
+                    tableBody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-gray-500">No records found for this date and period.</td></tr>';
+                    return;
+                }
+
+                tableBody.innerHTML = '';
+                records.forEach(record => {
+                    const row = document.createElement('tr');
+                    row.dataset.recordId = record.record_id || ''; // Store original record ID
+                    row.dataset.studentId = record.student_id;
+                    
+                    const isPresent = record.status.toLowerCase().includes('present');
+                    
+                    row.innerHTML = `
+                        <td class="p-4 text-gray-700">${record.regno}</td>
+                        <td class="p-4 font-semibold text-gray-900">${record.name}</td>
+                        <td class="p-4 font-bold ${isPresent ? 'text-green-700' : 'text-red-600'}">${record.status}</td>
+                        <td class="p-4 space-x-2">
+                            <button class="toggle-status-btn btn-animate bg-gray-500 text-white text-xs font-semibold px-3 py-1 rounded-full hover:bg-gray-600">
+                                Toggle Status
+                            </button>
+                        </td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+
+                // Add event listeners to the new buttons
+                document.querySelectorAll('.toggle-status-btn').forEach(btn => {
+                    btn.addEventListener('click', toggleStatus);
+                });
+            }
+
+            async function toggleStatus(e) {
+                const btn = e.target;
+                const row = btn.closest('tr');
+                const statusCell = row.children[2];
+                
+                const currentStatus = statusCell.textContent;
+                // If it's Absent, change to Present (Edited). If it's Present, change to Absent (Edited).
+                const newStatus = currentStatus.toLowerCase().includes('present') ? 'Absent (Edited)' : 'Present (Edited)';
+                
+                const payload = {
+                    record_id: row.dataset.recordId,
+                    student_id: row.dataset.studentId,
+                    new_status: newStatus,
+                    poll_details: {
+                        date: dateInput.value,
+                        period: periodInput.value.trim(),
+                        topic: "Manual Edit"
+                    }
+                };
+                
+                btn.disabled = true;
+                btn.textContent = 'Saving...';
+
+                try {
+                    const response = await fetch('/update_attendance_record', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!response.ok) {
+                        const err = await response.json();
+                        throw new Error(err.message || 'Server error');
+                    }
+
+                    const result = await response.json();
+                    
+                    // Update the row with new data
+                    row.dataset.recordId = result.new_record_id; // Update with new ID if one was created
+                    statusCell.textContent = newStatus;
+                    statusCell.className = `p-4 font-bold ${newStatus.includes('Present') ? 'text-green-700' : 'text-red-600'}`;
+                    fetchError.textContent = `Student ${row.children[1].textContent} updated.`;
+
+                } catch (error) {
+                    console.error('Update error:', error);
+                    fetchError.textContent = 'Error updating record: ' + error.message;
+                } finally {
+                    btn.disabled = false;
+                    btn.textContent = 'Toggle Status';
+                }
+            }
+        });
+    </script>
+</body>
+</html>

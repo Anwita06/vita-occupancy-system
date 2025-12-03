@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ subject.subject_title }} - Details</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
+    <style>
+        /* --- VITA Occupancy System - Unified Styles --- */
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background: linear-gradient(180deg, #fdf2ec, #fbe9e7, #fdf2ec); 
+            min-height: 100vh; 
+            color: #333; /* Ensuring dark text for readability */
+            transition: background 0.5s ease-in-out; 
+        }
+        
+        /* Global Animations */
+        .fade-in { animation: fadeIn 1s ease forwards; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .btn-animate { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .btn-animate:hover { 
+            transform: translateY(-3px); 
+            box-shadow: 0 8px 18px rgba(0, 0, 0, 0.2); 
+        }
+
+        /* Card/Form Styles (Glassmorphism) */
+        .glass-card { 
+            background: rgba(255, 255, 255, 0.75); 
+            backdrop-filter: blur(20px); 
+            border: 1px solid rgba(255, 255, 255, 0.5); /* Slightly stronger border */
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12); /* Smoother, larger shadow */
+        }
+        .form-input {
+            background: rgba(255, 255, 255, 0.6); /* Slightly more opaque input field */
+            border: 1px solid rgba(255, 255, 255, 0.9);
+            color: #333;
+        }
+        .form-input::placeholder { color: #888; }
+        
+        /* Table Styles */
+        .table-sticky thead th, thead.sticky th { 
+            position: sticky; 
+            top: 0; 
+            background: rgba(255, 255, 255, 0.95); /* Nearly opaque white for sticky header */
+            z-index: 10;
+            box-shadow: 0 2px 4px -1px rgba(0,0,0,0.05); /* Subtle shadow for separation */
+        }
+
+        /* Pie Chart Styles (Specific to advisor_subject_detail.html) */
+        .pie-container {
+            width: 200px;
+            height: 200px;
+            position: relative;
+            border-radius: 50%;
+            /* This gradient creates the chart */
+            background: conic-gradient(
+                #16a34a 0% {{ percent_above_75 }}%, /* green */
+                #dc2626 {{ percent_above_75 }}% 100% /* red */
+            );
+            transition: all 0.5s ease-in-out;
+        }
+        /* This creates the "hole" in the donut chart */
+        .pie-container:after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 85%; /* Adjust hole size */
+            height: 85%;
+            background: #fdf2ec; /* Match body background for clean cutout */
+            border-radius: 50%;
+            box-shadow: inset 0 0 12px rgba(0,0,0,0.1);
+        }
+        /* This is the text in the middle */
+        .pie-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10;
+            text-align: center;
+        }
+
+        /* Flash Message Transition (Specific to class_selection.html) */
+        .flash-message { transition: opacity 0.5s ease-out; }
+    </style>
+</head>
+<body class="p-4 md:p-10 text-gray-800">
+    <div class="app-container max-w-6xl mx-auto">
+        <header class="flex justify-between items-center mb-6">
+            <div>
+                <h1 class="text-4xl font-extrabold text-[#8A1C33]">{{ subject.subject_title }}</h1>
+                <p class="text-xl text-gray-700">{{ subject.branch }} - {{ subject.section }} (Sem {{ subject.sem }})</p>
+            </div>
+            <a href="{{ url_for('advisor_group_detail', group_key=group_key) }}" class="btn-animate bg-gray-600 text-white text-sm font-semibold px-5 py-2 rounded-full shadow-lg hover:bg-gray-700">
+                ← Back to Subjects
+            </a>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            <div class="lg:col-span-1 space-y-8">
+                <div class="glass-card rounded-2xl shadow-xl p-6 text-center">
+                    <h2 class="text-2xl font-bold text-[#8A1C33] mb-4">Student Standing</h2>
+                    <div class="flex justify-center my-4">
+                        <div class="pie-container">
+                            <div class="pie-text">
+                                <span class="text-4xl font-extrabold text-green-700">{{ "%.1f"|format(percent_above_75) }}%</span>
+                                <span class="block text-sm font-medium text-gray-600">Above 75%</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="space-y-2 text-left">
+                        <div class="flex justify-between items-center">
+                            <span class="flex items-center">
+                                <span class="w-3 h-3 rounded-full bg-green-600 mr-2"></span>
+                                <span class="font-semibold text-gray-700">Above 75%</span>
+                            </span>
+                            <span class="font-bold text-gray-800">{{ above_75_count }} Students</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="flex items-center">
+                                <span class="w-3 h-3 rounded-full bg-red-600 mr-2"></span>
+                                <span class="font-semibold text-gray-700">Below 75%</span>
+                            </span>
+                            <span class="font-bold text-gray-800">{{ below_75_count }} Students</span>
+                        </div>
+                         <div class="flex justify-between items-center border-t pt-2 mt-2">
+                            <span class="font-bold text-gray-700">Total</span>
+                            <span class="font-bold text-gray-800">{{ total_students }} Students</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-card rounded-2xl shadow-xl p-6">
+                    <h2 class="text-2xl font-bold text-[#8A1C33] mb-4">Student Statistics</h2>
+                    <p class="text-gray-600 mb-4">View a detailed breakdown of student performance for this subject.</p>
+                    <a href="{{ url_for('advisor_subject_stats', subject_id=subject.id) }}" class="btn-animate bg-blue-600 text-white text-sm font-semibold px-5 py-3 rounded-full shadow-lg hover:bg-blue-700 w-full text-center inline-block">
+                        Show Student Details
+                    </a>
+                </div>
+            </div>
+
+            <div class="lg:col-span-2 glass-card rounded-2xl shadow-xl p-6">
+                <h2 class="text-2xl font-bold text-[#8A1C33] mb-4">Class Session Log</h2>
+                <div class="overflow-x-auto max-h-[600px] overflow-y-auto table-sticky">
+                    <table class="w-full text-left">
+                        <thead>
+                            <tr class="text-gray-600 border-b border-white/50">
+                                <th class="p-4">Date</th>
+                                <th class="p-4">Period</th>
+                                <th class="p-4">Topic</th>
+                                <th class="p-4 text-green-700">Present</th>
+                                <th class="p-4 text-red-600">Absent</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-white/30">
+                            {% for log in session_log %}
+                            <tr>
+                                <td class="p-4 text-gray-700">{{ log.date }}</td>
+                                <td class="p-4 text-gray-700">{{ log.period }}</td>
+                                <td class="p-4 text-gray-700">{{ log.topic }}</td>
+                                <td class="p-4 font-bold text-green-700">{{ log.present }}</td>
+                                <td class="p-4 font-bold text-red-600">{{ log.absent }}</td>
+                            </tr>
+                            {% endfor %}
+                            {% if not session_log %}
+                            <tr>
+                                <td colspan="5" class="p-4 text-center text-gray-500">No sessions recorded for this subject.</td>
+                            </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

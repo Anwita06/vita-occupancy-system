@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Login - Vita Occupancy System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
+    <style>
+      body {
+        font-family: 'Inter', sans-serif;
+        background: linear-gradient(180deg, #fdf2ec, #fbe9e7, #fdf2ec);
+        overflow: hidden;
+      }
+      .fade-in { animation: fadeIn 1s ease forwards; }
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      .glass-card {
+        background: rgba(255, 255, 255, 0.7);
+        backdrop-filter: blur(25px);
+        border: 1px solid rgba(255, 255, 255, 0.4);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+      }
+      .btn-animate { transition: all 0.3s ease; }
+      .btn-animate:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 15px rgba(0, 0, 0, 0.15);
+      }
+      .form-input {
+        background: rgba(255, 255, 255, 0.5);
+        border: 1px solid rgba(255, 255, 255, 0.8);
+        color: #333;
+      }
+      .form-input::placeholder { color: #777; }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen text-gray-800 fade-in">
+    <div class="glass-card rounded-2xl p-10 md:p-14 max-w-md w-full border-t-8 border-[#D85A72]">
+        <h1 class="text-3xl md:text-4xl font-extrabold text-[#8A1C33] mb-4 tracking-wider text-center">
+            STUDENT LOGIN
+        </h1>
+        
+        <form action="{{ url_for('student_login') }}" method="POST" class="space-y-6">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Registration No.</label>
+                <input type="text" id="username" name="username" placeholder="e.g., REG-1-001" class="w-full px-4 py-3 form-input rounded-lg text-gray-900" required>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                <input type="password" id="password" name="password" placeholder="Default is your RegNo" class="w-full px-4 py-3 form-input rounded-lg text-gray-900" required>
+            </div>
+            <button type="submit" class="w-full mt-8 py-3 bg-[#D85A72] hover:bg-[#A82D49] text-white font-extrabold rounded-lg shadow-lg btn-animate">
+                Log In
+            </button>
+            
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <p class="text-red-600 text-center mt-4 text-sm font-medium">{{ message }}</p>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        </form>
+        
+        <p class="text-center text-gray-600 text-sm mt-6">
+            <a href="{{ url_for('login_page') }}" class="font-medium text-gray-600 hover:text-[#8A1C33]">← Back to Role Selection</a>
+        </p>
+    </div>
+</body>
+</html>

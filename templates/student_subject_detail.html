@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ subject.subject_title }} - Vita Occupancy System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(180deg, #fdf2ec, #fbe9e7, #fdf2ec);
+            min-height: 100vh;
+        }
+        .fade-in { animation: fadeIn 1s ease forwards; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+        }
+        .btn-animate { transition: all 0.3s ease; }
+        .btn-animate:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.15);
+        }
+    </style>
+</head>
+<body class="p-4 md:p-10 text-gray-800 fade-in">
+    <div class="app-container max-w-6xl mx-auto">
+        <header class="flex justify-between items-center mb-6">
+            <div>
+                <h1 class="text-4xl font-extrabold text-[#8A1C33]">{{ subject.subject_title }}</h1>
+                <p class="text-xl text-gray-700">{{ student.name }} ({{ student.regno }})</p>
+                <p class="text-gray-600">{{ subject.subject_code }} - {{ subject.teacher.username }}</p>
+            </div>
+            <div class="flex space-x-3">
+                <a href="{{ url_for('student_subjects') }}" class="btn-animate bg-gray-600 text-white text-sm font-semibold px-5 py-2 rounded-full shadow-lg hover:bg-gray-700">
+                    All Subjects
+                </a>
+                <a href="{{ url_for('student_dashboard') }}" class="btn-animate bg-gray-600 text-white text-sm font-semibold px-5 py-2 rounded-full shadow-lg hover:bg-gray-700">
+                    Dashboard
+                </a>
+                <a href="{{ url_for('logout') }}" class="btn-animate bg-[#A82D49] text-white text-sm font-semibold px-5 py-2 rounded-full shadow-lg hover:bg-[#8a1c33]">
+                    Log Out
+                </a>
+            </div>
+        </header>
+
+        <!-- Attendance Summary -->
+        <div class="mb-8 p-6 glass-card rounded-2xl shadow-xl border-t-4 {% if stats.percentage >= 75 %}border-green-600{% else %}border-red-600{% endif %}">
+            <h2 class="text-xl font-bold text-gray-700 mb-2">Attendance Summary</h2>
+            <p class="text-6xl font-extrabold {% if stats.percentage >= 75 %}text-green-700{% else %}text-red-700{% endif %}">
+                {{ "%.2f"|format(stats.percentage) }}%
+            </p>
+            <p class="text-lg text-gray-600 mt-2">
+                Attended <strong>{{ stats.present }}</strong> out of <strong>{{ stats.total }}</strong> total classes.
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Absent Classes -->
+            <div class="glass-card rounded-2xl shadow-xl p-6">
+                <h2 class="text-2xl font-bold text-red-600 mb-4">Absent Classes</h2>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead>
+                            <tr class="text-gray-600 border-b border-white/50">
+                                <th class="p-3">Date</th>
+                                <th class="p-3">Period</th>
+                                <th class="p-3">Topic</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-white/30">
+                            {% for report in absent_classes %}
+                            <tr>
+                                <td class="p-3 text-gray-700">{{ report.date.strftime('%Y-%m-%d') }}</td>
+                                <td class="p-3 text-gray-700">{{ report.period or 'N/A' }}</td>
+                                <td class="p-3 text-gray-700">{{ report.topic or 'N/A' }}</td>
+                            </tr>
+                            {% endfor %}
+                            {% if not absent_classes %}
+                            <tr>
+                                <td colspan="3" class="p-4 text-center text-gray-500">No absent records found for this subject.</td>
+                            </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Complete Attendance Log -->
+            <div class="glass-card rounded-2xl shadow-xl p-6">
+                <h2 class="text-2xl font-bold text-[#8A1C33] mb-4">Complete Attendance Log</h2>
+                <div class="overflow-x-auto max-h-96">
+                    <table class="w-full text-left">
+                        <thead>
+                            <tr class="text-gray-600 border-b border-white/50">
+                                <th class="p-3">Date</th>
+                                <th class="p-3">Period</th>
+                                <th class="p-3">Topic</th>
+                                <th class="p-3">Faculty</th>
+                                <th class="p-3">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-white/30">
+                            {% for report, teacher in reports %}
+                            <tr>
+                                <td class="p-3 text-gray-700">{{ report.date.strftime('%Y-%m-%d %I:%M %p') }}</td>
+                                <td class="p-3 text-gray-700">{{ report.period or 'N/A' }}</td>
+                                <td class="p-3 text-gray-700">{{ report.topic or 'N/A' }}</td>
+                                <td class="p-3 text-gray-700">{{ teacher.username }}</td>
+                                <td class="p-3 font-bold {% if report.status.startswith('Present') %}text-green-700{% else %}text-red-600{% endif %}">
+                                    {{ report.status }}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                            {% if not reports %}
+                            <tr>
+                                <td colspan="5" class="p-4 text-center text-gray-500">No attendance records found for this subject.</td>
+                            </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

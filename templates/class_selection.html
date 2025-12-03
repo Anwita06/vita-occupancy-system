@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Select Class - Vita Occupancy System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
+    <style>
+        /* --- VITA Occupancy System - Unified Styles --- */
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background: linear-gradient(180deg, #fdf2ec, #fbe9e7, #fdf2ec); 
+            min-height: 100vh; 
+            color: #333; /* Ensuring dark text for readability */
+            transition: background 0.5s ease-in-out; 
+        }
+        
+        /* Global Animations */
+        .fade-in { animation: fadeIn 1s ease forwards; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .btn-animate { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .btn-animate:hover { 
+            transform: translateY(-3px); 
+            box-shadow: 0 8px 18px rgba(0, 0, 0, 0.2); 
+        }
+
+        /* Card/Form Styles (Glassmorphism) */
+        .glass-card { 
+            background: rgba(255, 255, 255, 0.75); 
+            backdrop-filter: blur(20px); 
+            border: 1px solid rgba(255, 255, 255, 0.5); /* Slightly stronger border */
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12); /* Smoother, larger shadow */
+        }
+        .form-input {
+            background: rgba(255, 255, 255, 0.6); /* Slightly more opaque input field */
+            border: 1px solid rgba(255, 255, 255, 0.9);
+            color: #333;
+        }
+        .form-input::placeholder { color: #888; }
+        
+        /* Table Styles */
+        .table-sticky thead th, thead.sticky th { 
+            position: sticky; 
+            top: 0; 
+            background: rgba(255, 255, 255, 0.95); /* Nearly opaque white for sticky header */
+            z-index: 10;
+            box-shadow: 0 2px 4px -1px rgba(0,0,0,0.05); /* Subtle shadow for separation */
+        }
+
+        /* Pie Chart Styles (Specific to advisor_subject_detail.html) */
+        .pie-container {
+            width: 200px;
+            height: 200px;
+            position: relative;
+            border-radius: 50%;
+            transition: all 0.5s ease-in-out;
+        }
+        .pie-container:after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 85%;
+            height: 85%;
+            background: #fdf2ec; /* Match body background for clean cutout */
+            border-radius: 50%;
+            box-shadow: inset 0 0 12px rgba(0,0,0,0.1);
+        }
+        .pie-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10;
+            text-align: center;
+        }
+
+        /* Flash Message Transition (Specific to class_selection.html) */
+        .flash-message { transition: opacity 0.5s ease-out; }
+    </style>
+</head>
+<body class="p-4 md:p-10 text-gray-800 fade-in">
+    <div class="app-container max-w-3xl mx-auto">
+        
+        <header class="flex justify-between items-center mb-6">
+            <h1 class="text-2xl font-extrabold text-[#8A1C33]">
+                Vita Occupancy System
+            </h1>
+            <a href="{{ url_for('logout') }}" class="btn-animate bg-[#A82D49] text-white text-sm font-semibold px-5 py-2 rounded-full shadow-lg hover:bg-[#8a1c33]">
+                Log Out
+            </a>
+        </header>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            <div class="mb-6 space-y-3">
+              {% for category, message in messages %}
+                <div class="
+                  flash-message
+                  text-center text-sm font-medium rounded-lg py-3 px-4 border 
+                  {% if category == 'success' %}
+                    bg-green-100 text-green-800 border-green-300
+                  {% elif category == 'error' %}
+                    bg-red-100 text-red-800 border-red-300
+                  {% else %}
+                    bg-gray-100 text-gray-800 border-gray-300
+                  {% endif %}
+                ">
+                  {{ message }}
+                </div>
+              {% endfor %}
+            </div>
+          {% endif %}
+        {% endwith %}
+
+        <div class="glass-card rounded-2xl p-8 md:p-12 w-full border-t-8 border-[#A82D49]">
+            <h1 class="text-4xl font-extrabold text-[#8A1C33] text-center mb-8 tracking-wider">SELECT A CLASS</h1>
+            
+            <div id="class-selection-buttons" class="space-y-4">
+                
+                {% for class in classes %}
+                <a href="{{ url_for('home', class_id=class.id) }}" class="block w-full text-left p-6 bg-white/40 hover:bg-white/60 rounded-xl shadow-lg transition-all border-l-8 border-[#A82D49]">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <p class="text-2xl font-extrabold text-[#8A1C33]">{{ class.subject_title }}</p>
+                            <p class="text-lg text-gray-700 font-semibold">{{ class.branch }} - {{ class.section }} (Sem {{ class.sem }})</p>
+                        </div>
+                        <div class="text-right">
+                            <span class="px-4 py-1 bg-[#A82D49] text-white text-sm font-bold rounded-full">{{ class.strength }} Students</span>
+                        </div>
+                    </div>
+                </a>
+                {% endfor %}
+                
+                {% if not classes %}
+                    <p class="text-center text-gray-600">You have not created any classes yet. 
+                        <a href="{{ url_for('teacher_signup') }}" class="text-[#A82D49]">Add classes via the signup page</a>.
+                    </p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <script>
+     // Optional: fade out flash messages after 4 seconds
+     setTimeout(() => {
+       document.querySelectorAll('.flash-message').forEach(el => {
+         el.style.opacity = '0';
+         setTimeout(() => el.style.display = 'none', 500); // Remove after fade
+       });
+     }, 4000);
+    </script>
+</body>
+</html>

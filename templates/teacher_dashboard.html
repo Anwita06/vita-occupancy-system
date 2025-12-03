@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teacher Dashboard - {{ selected_class.branch }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
+    <style>    
+        /* (Styles remain the same) */
+        body { font-family: 'Inter', sans-serif; background: linear-gradient(180deg, #fdf2ec, #fbe9e7, #fdf2ec); min-height: 100vh; }
+        .fade-in { animation: fadeIn 1s ease forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .glass-card { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(25px); border: 1px solid rgba(255, 255, 255, 0.4); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08); }
+        .btn-animate { transition: all 0.3s ease; }
+        .btn-animate:hover { transform: translateY(-3px); box-shadow: 0 8px 15px rgba(0, 0, 0, 0.15); }
+        .form-input { background: rgba(255, 255, 255, 0.5); border: 1px solid rgba(255, 255, 255, 0.8); color: #333; }
+        .form-input::placeholder { color: #777; }
+        .spinner { border: 4px solid rgba(0, 0, 0, 0.1); border-left-color: #A82D49; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .student-card { background: rgba(255, 255, 255, 0.9); border: 1px solid rgba(0, 0, 0, 0.05); border-radius: 12px; padding: 12px 8px; text-align: center; transition: all 0.3s ease; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border-top-width: 6px; height: 100%; cursor: pointer; }
+        .student-card:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,0.1); }
+        .card-border-absent { border-top-color: #A82D49; }
+        .card-border-present { border-top-color: #16a34a; }
+        .student-card .regno { font-size: 0.75rem; font-weight: 600; color: #6b7280; word-break: break-all; }
+        .student-card .name { font-size: 1.25rem; font-weight: 800; color: #1f2937; margin: 6px 0; }
+        .student-card .status { font-size: 1.1rem; font-weight: 700; margin-bottom: 8px; }
+        .student-card .percentage { font-size: 0.9rem; font-weight: 700; margin-bottom: 8px; }
+        .student-card .history-link { font-size: 0.75rem; font-weight: 600; color: #4b5563; text-decoration: underline; position: relative; z-index: 10; }
+        .student-card .history-link:hover { color: #1d4ed8; }
+    </style>
+</head>
+<body class="p-4 md:p-10 text-gray-800 fade-in">
+    <div class="app-container max-w-full mx-auto px-4">
+        
+        <header class="flex flex-col md:flex-row justify-between md:items-center mb-6 gap-4">
+            <div>
+                <h1 class="text-4xl font-extrabold text-[#8A1C33]">Hello, {{ current_user.username }}</h1>
+                <p class="text-2xl text-[#A82D49] font-semibold">
+                    {{ selected_class.subject_title }} ({{ selected_class.branch }} - {{ selected_class.section }})
+                </p>
+            </div>
+            <div class="flex items-center gap-4">
+                <div id="ws-status-container" class="flex items-center gap-2 p-3 bg-white/50 rounded-lg shadow">
+                    <div id="ws-status-indicator" class="w-3 h-3 rounded-full bg-yellow-500"></div>
+                    <span id="ws-status-text" class="text-sm font-medium text-gray-700">Connecting...</span>
+                </div>
+                <a href="{{ url_for('class_selection') }}" class="btn-animate bg-gray-600 text-white text-sm font-semibold px-5 py-2 rounded-full shadow-lg hover:bg-gray-700">
+                    Change Class
+                </a>
+                <a href="{{ url_for('logout') }}" class="btn-animate bg-[#A82D49] text-white text-sm font-semibold px-5 py-2 rounded-full shadow-lg hover:bg-[#8a1c33]">
+                    Log Out
+                </a>
+            </div>
+        </header>
+
+        <div class="glass-card p-6 rounded-2xl shadow-xl mb-6 border-t-4 border-[#A82D49]">
+            <h2 class="text-2xl font-bold text-[#8A1C33] mb-4">Start New Session</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label for="poll-period" class="block text-sm font-medium text-gray-600 mb-2">Period Number</label>
+                    <input type="text" id="poll-period" placeholder="e.g., 1 or 9:00-10:00" class="w-full px-4 py-3 form-input rounded-lg">
+                </div>
+                <div>
+                    <label for="poll-topic" class="block text-sm font-medium text-gray-600 mb-2">Topic Taught</label>
+                    <input type="text" id="poll-topic" placeholder="e.g., Introduction to Kinematics" class="w-full px-4 py-3 form-input rounded-lg">
+                </div>
+                <div class="md:self-end flex flex-col md:flex-row gap-3">
+                    <button id="confirm-attendance-btn" class="w-full mt-2 md:mt-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-extrabold rounded-lg shadow-lg flex items-center justify-center gap-2 btn-animate">
+                        <span id="confirm-btn-text">Confirm Attendance</span>
+                        <div id="confirm-spinner" class="spinner hidden" style="border-left-color: #fff;"></div>
+                    </button>
+                    <button id="download-report-btn" class="w-full mt-2 md:mt-8 py-3 bg-green-600 hover:bg-green-700 text-white font-extrabold rounded-lg shadow-lg flex items-center justify-center gap-2 btn-animate">
+                        <span id="download-btn-text">Download Report</span>
+                        <div id="download-spinner" class="spinner hidden" style="border-left-color: #fff;"></div>
+                    </button>
+                </div>
+            </div>
+            <p id="poll-error" class="text-red-600 text-sm font-medium mt-3"></p>
+        </div>
+
+        <div class="glass-card rounded-2xl shadow-xl p-6">
+            <div class="flex flex-col md:flex-row justify-between md:items-center mb-4">
+                <h2 class="text-2xl font-bold text-[#8A1C33] mb-2 md:mb-0">
+                    Student List (<span id="student-count">{{ students_with_stats|length }}</span> Students)
+                </h2>
+                <div class="flex items-center gap-4">
+                    <label for="filter-select" class="text-sm font-medium text-gray-600">Filter:</label>
+                    <select id="filter-select" class="form-input rounded-lg py-2 px-3">
+                        <option value="all">Show All</option>
+                        <option value="above75">Show 75% & Above</option>
+                        <option value="below75">Show Below 75%</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div id="student-list-body" class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-3">
+                
+                {% for item in students_with_stats %}
+                <div class="student-card student-row {% if item.stats.percentage >= 75 %}card-border-present{% else %}card-border-absent{% endif %}" 
+                    data-chair="{{ item.student.chair_number }}" 
+                    data-student-id="{{ item.student.id }}"
+                    data-percentage="{{ item.stats.percentage }}">
+                    
+                    <div class="regno">{{ item.student.regno }}</div>
+                    <div class="name">{{ item.student.name }}</div>
+                    <div class="status">
+                        <span class="status-indicator text-red-600">Absent</span>
+                    </div>
+                    <div class="percentage {% if item.stats.percentage >= 75 %}text-green-700{% else %}text-red-600{% endif %}">
+                        {{ "%.2f"|format(item.stats.percentage) }}%
+                    </div>
+                    <a href="{{ url_for('student_history', student_id=item.student.id, class_id=selected_class.id) }}" class="history-link">
+                        View History
+                    </a>
+                </div>
+                {% endfor %}
+
+            </div>
+        </div>
+        
+        <div class="glass-card p-6 rounded-2xl shadow-xl mt-6 border-t-4 border-gray-500">
+            <h2 class="text-2xl font-bold text-[#8A1C33] mb-4">Manage Attendance</h2>
+            <p class="text-gray-600 mb-4">Need to correct a mistake from a previous day? Go to the attendance editor to find and update past records.</p>
+            <a href="{{ url_for('edit_attendance', class_id=selected_class.id) }}" 
+               class="w-full md:w-auto py-3 px-6 bg-gray-600 hover:bg-gray-700 text-white font-bold rounded-lg btn-animate inline-block text-center">
+                Edit Past Attendance
+            </a>
+        </div>
+        
+        <div class="glass-card p-6 rounded-2xl shadow-xl mt-6 border-t-4 border-gray-500">
+            <h2 class="text-2xl font-bold text-[#8A1C33] mb-4">Manage Student List</h2>
+            <p class="text-gray-600 mb-4">Update student details (Name, RegNo, Phone) by uploading a CSV. The default password will be set to the student's RegNo.</p>
+            <form action="{{ url_for('upload_csv') }}" method="POST" enctype="multipart/form-data" class="flex flex-col md:flex-row gap-4 items-center">
+                <input type="hidden" name="class_id" value="{{ selected_class.id }}">
+                <input type="file" name="student_csv" class="w-full md:w-auto text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#A82D49] file:text-white hover:file:bg-[#8A1C33] file:cursor-pointer" required>
+                <button type="submit" class="w-full md:w-auto py-2 px-5 bg-[#A82D49] hover:bg-[#8A1C33] text-white font-bold rounded-lg btn-animate">
+                    Upload CSV
+                </button>
+                <a href="{{ url_for('download_demo_csv', class_id=selected_class.id) }}" class="w-full md:w-auto text-center py-2 px-5 bg-gray-600 hover:bg-gray-700 text-white text-sm font-bold rounded-lg btn-animate">
+                    Download Template
+                </a>
+            </form>
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="mt-4 space-y-2">
+                    {% for category, message in messages %}
+                        {% if category == 'error' %}
+                        <p class="text-red-600 text-sm font-medium">{{ message }}</p>
+                        {% else %}
+                        <p class="text-green-700 text-sm font-medium">{{ message }}</p>
+                        {% endif %}
+                    {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+        </div>
+    </div>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            
+            const wsStatusIndicator = document.getElementById('ws-status-indicator');
+            const wsStatusText = document.getElementById('ws-status-text');
+            const periodInput = document.getElementById('poll-period');
+            const topicInput = document.getElementById('poll-topic');
+            const pollError = document.getElementById('poll-error');
+            const confirmBtn = document.getElementById('confirm-attendance-btn');
+            const confirmBtnText = document.getElementById('confirm-btn-text');
+            const confirmSpinner = document.getElementById('confirm-spinner');
+            const downloadBtn = document.getElementById('download-report-btn');
+            const downloadBtnText = document.getElementById('download-btn-text');
+            const downloadSpinner = document.getElementById('download-spinner');
+            const studentListBody = document.getElementById('student-list-body');
+            const studentCountSpan = document.getElementById('student-count');
+            const filterSelect = document.getElementById('filter-select');
+
+            let websocket;
+            const LOCK_DELAY_MS = 50; 
+
+            function connectWebSocket() {
+                // Use the current host and port 8765 as per the Python server
+                const wsURL = `ws://${window.location.hostname}:8765`;
+                websocket = new WebSocket(wsURL);
+                
+                websocket.onopen = function() {
+                    console.log('WebSocket Connected');
+                    wsStatusText.textContent = 'Connected (Real-time)';
+                    wsStatusIndicator.classList.remove('bg-yellow-500', 'bg-red-600');
+                    wsStatusIndicator.classList.add('bg-green-600');
+                };
+                
+                // --- CRITICAL FIX APPLIED HERE: Handle the Arduino's 'chairNumber:status' format ---
+                websocket.onmessage = function(event) {
+                    const fullData = event.data.trim();
+                    const parts = fullData.split(':');
+                    
+                    if (parts.length === 2) {
+                        const chairNumber = parts[0].trim();
+                        const status = parts[1].toLowerCase().trim(); // 'present' or 'absent'
+                        
+                        const studentCard = document.querySelector(`.student-card[data-chair="${chairNumber}"]`);
+                        
+                        if (studentCard) {
+                            const statusCell = studentCard.querySelector('.status-indicator');
+                            
+                            // Check if the status has been manually overridden before applying live update
+                            const currentStatusText = statusCell.textContent.trim();
+
+                            // Only apply live update if the current status is NOT manually set
+                            if (!currentStatusText.includes('(Man)')) {
+                                if (status === 'present') {
+                                    statusCell.textContent = 'Present (Live)';
+                                    statusCell.classList.remove('text-red-600', 'text-blue-600');
+                                    statusCell.classList.add('text-green-700');
+                                    // Also update the card border to green
+                                    studentCard.classList.remove('card-border-absent');
+                                    studentCard.classList.add('card-border-present');
+                                } else if (status === 'absent') {
+                                    statusCell.textContent = 'Absent';
+                                    statusCell.classList.remove('text-blue-600', 'text-green-700');
+                                    statusCell.classList.add('text-red-600');
+                                    // Also update the card border to red
+                                    studentCard.classList.remove('card-border-present');
+                                    studentCard.classList.add('card-border-absent');
+                                }
+                            }
+                        }
+                    }
+                    // Ignoring the old 'LIVE_DATA:1' format completely now.
+                };
+                
+                websocket.onclose = function() {
+                    console.log('WebSocket Disconnected');
+                    wsStatusText.textContent = 'Disconnected (Retrying...)';
+                    wsStatusIndicator.classList.remove('bg-green-600');
+                    wsStatusIndicator.classList.add('bg-red-600');
+                    setTimeout(connectWebSocket, 3000);
+                };
+                
+                websocket.onerror = function(error) {
+                    console.error('WebSocket Error:', error);
+                    wsStatusText.textContent = 'Error';
+                    wsStatusIndicator.classList.remove('bg-green-600');
+                    wsStatusIndicator.classList.add('bg-red-600');
+                };
+            }
+
+            // --- Confirmation (Snapshot/Lock) Logic ---
+            confirmBtn.addEventListener('click', async function() {
+                const pollDetails = getPollDetails();
+                if (!pollDetails.isValid) {
+                    pollError.textContent = 'Error: Period and Topic are required to confirm attendance.';
+                    return;
+                }
+                pollError.textContent = ''; 
+                setLoading(true, 'confirm');
+                
+                // 1. Snapshot the CURRENT displayed status (Live, Absent, or Man)
+                const attendanceData = getAttendanceData();
+                
+                if (attendanceData.length === 0) {
+                    pollError.textContent = 'Error: No student data found to process.';
+                    setLoading(false, 'confirm');
+                    return;
+                }
+
+                try {
+                    // Optional short delay to ensure the last possible packet is received
+                    await new Promise(resolve => setTimeout(resolve, LOCK_DELAY_MS));
+
+                    // 2. Send the snapshot to Flask for permanent saving
+                    const response = await fetch('/confirm_attendance', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({
+                            attendance: attendanceData,
+                            poll_details: pollDetails.data
+                        })
+                    });
+                    const result = await response.json();
+                    if (response.ok) {
+                        pollError.textContent = 'Success: ' + result.message;
+                        // Reload to show updated percentage stats
+                        location.reload(); 
+                    } else {
+                        throw new Error(result.message);
+                    }
+                } catch (error) {
+                    console.error('Confirm error:', error);
+                    pollError.textContent = 'Failed to confirm: ' + error.message;
+                } finally {
+                    setLoading(false, 'confirm');
+                }
+            });
+
+            // --- Other Functions (Manual Toggle, Download, Helpers) ---
+            
+            // Student Card Click Handler (Manual Toggle)
+            studentListBody.addEventListener('click', function(e) {
+                if (e.target.classList.contains('history-link')) { return; }
+                const studentCard = e.target.closest('.student-card');
+                if (studentCard) {
+                    const statusIndicator = studentCard.querySelector('.status-indicator');
+                    const currentStatus = statusIndicator.textContent.trim();
+                    
+                    if (currentStatus.includes('Absent') || currentStatus.includes('Present (Live)')) {
+                        // Mark as manually Present (overrides live stream)
+                        statusIndicator.textContent = 'Present (Man)';
+                        statusIndicator.classList.remove('text-red-600', 'text-green-700');
+                        statusIndicator.classList.add('text-blue-600'); 
+                        // Update card border
+                        studentCard.classList.remove('card-border-absent');
+                        studentCard.classList.add('card-border-present');
+                    } else if (currentStatus.includes('Present (Man)')) {
+                         // Revert from manual Present to Absent
+                         statusIndicator.textContent = 'Absent';
+                         statusIndicator.classList.remove('text-blue-600', 'text-green-700');
+                         statusIndicator.classList.add('text-red-600');
+                         // Update card border
+                         studentCard.classList.remove('card-border-present');
+                         studentCard.classList.add('card-border-absent');
+                    }
+                }
+            });
+
+
+            // Download Report (Download CSV only) - (Keep as is)
+            downloadBtn.addEventListener('click', async function() {
+                const pollDetails = getPollDetails();
+                if (!pollDetails.isValid) {
+                    pollError.textContent = 'Error: Period and Topic are required to download the report.';
+                    return;
+                }
+                pollError.textContent = ''; 
+                setLoading(true, 'download');
+                // The report downloads the CURRENT state (live snapshot)
+                const attendanceData = getAttendanceData(true);
+                
+                if (attendanceData.length === 0) {
+                    pollError.textContent = 'Error: No student data found.';
+                    setLoading(false, 'download');
+                    return;
+                }
+                
+                try {
+                    const response = await fetch('/download_report', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({
+                            attendance: attendanceData,
+                            poll_details: pollDetails.data
+                        })
+                    });
+                    if (response.ok) {
+                        const blob = await response.blob();
+                        const disposition = response.headers.get('content-disposition');
+                        const filename = disposition ? disposition.split('filename=')[1].replace(/"/g, '') : 'attendance_report.csv';
+                        
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.style.display = 'none';
+                        a.href = url;
+                        a.download = filename;
+                        document.body.appendChild(a);
+                        a.click();
+                        window.URL.revokeObjectURL(url);
+                        a.remove();
+                    } else {
+                        const errorResult = await response.json();
+                        throw new Error(errorResult.message);
+                    }
+                } catch (error) {
+                    console.error('Download error:', error);
+                    pollError.textContent = 'Failed to download: ' + error.message;
+                } finally {
+                    setLoading(false, 'download');
+                }
+            });
+
+            // Helper Functions 
+            function getPollDetails() {
+                const period = periodInput.value.trim();
+                const topic = topicInput.value.trim();
+                if (!period || !topic) {
+                    return { isValid: false };
+                }
+                return { isValid: true, data: { period: period, topic: topic } };
+            }
+
+            function getAttendanceData(visibleOnly = false) {
+                const attendanceData = [];
+                let selector = '.student-card';
+                if (visibleOnly) {
+                    selector = '.student-card:not([style*="display: none"])';
+                }
+                const studentCards = studentListBody.querySelectorAll(selector);
+                
+                studentCards.forEach(card => {
+                    const statusText = card.querySelector('.status-indicator').textContent.trim(); // Trim for safety
+                    let finalStatus = 'Absent'; 
+                    
+                    // Logic to lock the currently displayed status:
+                    if (statusText.includes('Present (Man)')) {
+                        finalStatus = 'Present'; // Standardized to 'Present' for saving (Manual)
+                    } else if (statusText.includes('Present (Live)')) {
+                        finalStatus = 'Present (Auto)'; // Standardized for automated present
+                    }
+                    
+                    attendanceData.push({
+                        student_id: card.dataset.studentId,
+                        status: finalStatus // Locked status sent to Flask
+                    });
+                });
+                return attendanceData;
+            }
+            
+            function setLoading(isLoading, buttonType) {
+                if (buttonType === 'confirm') {
+                    confirmBtn.disabled = isLoading;
+                    confirmBtnText.classList.toggle('hidden', isLoading);
+                    confirmSpinner.classList.toggle('hidden', !isLoading);
+                } else if (buttonType === 'download') {
+                    downloadBtn.disabled = isLoading;
+                    downloadBtnText.classList.toggle('hidden', isLoading);
+                    downloadSpinner.classList.toggle('hidden', !isLoading);
+                }
+            }
+
+            // Filter and Sort Logic (Keep as is)
+            filterSelect.addEventListener('change', filterCards);
+
+            function filterCards() {
+                const filterValue = filterSelect.value;
+                const cards = Array.from(studentListBody.querySelectorAll('.student-card'));
+                let visibleCount = 0;
+                
+                cards.forEach(card => {
+                    const percentage = parseFloat(card.dataset.percentage);
+                    let show = false;
+                    if (filterValue === 'all') {
+                        show = true;
+                    } else if (filterValue === 'above75') {
+                        show = percentage >= 75;
+                    } else if (filterValue === 'below75') {
+                        show = percentage < 75;
+                    }
+                    
+                    if (show) {
+                        card.style.display = 'block';
+                        visibleCount++;
+                    } else {
+                        card.style.display = 'none';
+                    }
+                });
+                
+                studentCountSpan.textContent = visibleCount;
+                sortCards('chair', 'asc');
+            }
+
+            function sortCards(key, direction) {
+                const rows = Array.from(studentListBody.querySelectorAll('.student-card'));
+                
+                const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
+
+                rows.sort((rowA, rowB) => {
+                    let valA = rowA.dataset[key];
+                    let valB = rowB.dataset[key];
+                    let compare;
+                    if (key === 'chair' || key === 'percentage') {
+                        compare = parseFloat(valA) - parseFloat(valB);
+                    } else {
+                        compare = collator.compare(valA, valB);
+                    }
+                    return direction === 'asc' ? compare : -compare;
+                });
+
+                rows.forEach(row => studentListBody.appendChild(row));
+            }
+
+            // --- Start Everything ---
+            connectWebSocket();
+            filterCards(); // Run filter (and default sort) on load
+        });
+    </script>
+</body>
+</html>

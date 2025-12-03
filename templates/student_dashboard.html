@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Dashboard - Vita Occupancy System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
+    <style>    
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(180deg, #fdf2ec, #fbe9e7, #fdf2ec);
+            min-height: 100vh;
+        }
+        .fade-in { animation: fadeIn 1s ease forwards; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+        }
+        .btn-animate { transition: all 0.3s ease; }
+        .btn-animate:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.15);
+        }
+    </style>
+</head>
+<body class="p-4 md:p-10 text-gray-800 fade-in">
+    <div class="app-container max-w-6xl mx-auto">
+        <header class="flex justify-between items-center mb-6">
+            <div>
+                <h1 class="text-4xl font-extrabold text-[#8A1C33]">Student Dashboard</h1>
+                <p class="text-xl text-gray-700">{{ student.name }} ({{ student.regno }})</p>
+                <p class="text-gray-600">{{ student.class_obj.branch }} - Sem {{ student.class_obj.sem }} - Section {{ student.class_obj.section }}</p>
+            </div>
+            <div class="flex space-x-3">
+                <a href="{{ url_for('logout') }}" class="btn-animate bg-[#A82D49] text-white text-sm font-semibold px-5 py-2 rounded-full shadow-lg hover:bg-[#8a1c33]">
+                    Log Out
+                </a>
+            </div>
+        </header>
+
+        <div class="mb-8 p-6 glass-card rounded-2xl shadow-xl border-t-4 border-blue-600">
+            <h2 class="text-xl font-bold text-gray-700 mb-4">Account Settings</h2>
+            <button onclick="openPasswordModal()" class="btn-animate bg-blue-600 text-white text-sm font-semibold px-5 py-2 rounded-full shadow-lg hover:bg-blue-700">
+                Change Password
+            </button>
+        </div>
+
+        <div class="glass-card rounded-2xl shadow-xl p-6">
+            <h2 class="text-2xl font-bold text-[#8A1C33] mb-6">My Subjects</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {% for item in subjects_with_stats %}
+                <div class="glass-card rounded-2xl shadow-lg p-6 border-t-4 {% if item.stats.percentage >= 75 %}border-green-600{% else %}border-red-600{% endif %}">
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">{{ item.subject.subject_title }}</h3>
+                    <p class="text-sm text-gray-600 mb-4">{{ item.subject.subject_code }} - {{ item.subject.teacher.username }}</p>
+                    
+                    <div class="mb-4">
+                        <p class="text-3xl font-extrabold {% if item.stats.percentage >= 75 %}text-green-700{% else %}text-red-700{% endif %}">
+                            {{ "%.2f"|format(item.stats.percentage) }}%
+                        </p>
+                        <p class="text-sm text-gray-600">
+                            {{ item.stats.present }}/{{ item.stats.total }} classes
+                        </p>
+                    </div>
+                    
+                    <a href="{{ url_for('student_subject_detail', subject_id=item.subject.id) }}" 
+                       class="btn-animate bg-[#8A1C33] text-white text-sm font-semibold px-4 py-2 rounded-lg hover:bg-[#A82D49] inline-block w-full text-center">
+                        View Details
+                    </a>
+                </div>
+                {% endfor %}
+                
+                {% if not subjects_with_stats %}
+                <div class="col-span-3 glass-card rounded-2xl shadow-xl p-8 text-center">
+                    <p class="text-gray-500 text-lg">No subjects found for your class.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div id="passwordModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="bg-white rounded-2xl p-6 w-full max-w-md mx-4">
+            <h3 class="text-xl font-bold text-gray-800 mb-4">Change Password</h3>
+            <form id="passwordForm" onsubmit="changePassword(event)">
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-medium mb-2">Old Password</label>
+                    <input type="password" id="oldPassword" required 
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-medium mb-2">New Password</label>
+                    <input type="password" id="newPassword" required 
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div class="flex justify-end space-x-3">
+                    <button type="button" onclick="closePasswordModal()" 
+                        class="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">
+                        Cancel
+                    </button>
+                    <button type="submit" 
+                        class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                        Change Password
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+    function openPasswordModal() {
+        document.getElementById('passwordModal').classList.remove('hidden');
+    }
+
+    function closePasswordModal() {
+        document.getElementById('passwordModal').classList.add('hidden');
+        document.getElementById('passwordForm').reset();
+    }
+
+    function changePassword(event) {
+        event.preventDefault();
+        
+        const oldPassword = document.getElementById('oldPassword').value;
+        const newPassword = document.getElementById('newPassword').value;
+        
+        fetch('/student/change_password', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                old_password: oldPassword,
+                new_password: newPassword
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Password changed successfully!');
+                closePasswordModal();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while changing password');
+        });
+    }
+    </script>
+</body>
+</html>
